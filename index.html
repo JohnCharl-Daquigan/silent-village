@@ -8,13 +8,16 @@
     <title>SILENT VILLAGE</title>
 
     <link rel="stylesheet" href="style.css">
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+
 </head>
 
 <body>
 
     <div class="background"></div>
-
-    <!-- ================= HEADER ================= -->
 
     <header>
         <h1>SILENT VILLAGE</h1>
@@ -22,7 +25,7 @@
     </header>
 
 
-    <!-- ================= LOGIN ================= -->
+    <!-- LOGIN -->
 
     <section id="loginScreen" class="screen">
 
@@ -31,9 +34,9 @@
             <h2>Enter the Village</h2>
 
             <input
-                type="text"
-                id="loginUsername"
-                placeholder="Username"
+                type="email"
+                id="loginEmail"
+                placeholder="Email"
             >
 
             <input
@@ -50,7 +53,7 @@
 
             <p>
                 Don't have an account?
-                <span onclick="showSignup()" class="link">
+                <span class="link" onclick="showSignup()">
                     Create Account
                 </span>
             </p>
@@ -60,7 +63,7 @@
     </section>
 
 
-    <!-- ================= SIGN UP ================= -->
+    <!-- SIGN UP -->
 
     <section id="signupScreen" class="screen hidden">
 
@@ -72,6 +75,12 @@
                 type="text"
                 id="signupUsername"
                 placeholder="Username"
+            >
+
+            <input
+                type="email"
+                id="signupEmail"
+                placeholder="Email"
             >
 
             <input
@@ -94,7 +103,7 @@
 
             <p>
                 Already have an account?
-                <span onclick="showLogin()" class="link">
+                <span class="link" onclick="showLogin()">
                     Sign In
                 </span>
             </p>
@@ -104,7 +113,7 @@
     </section>
 
 
-    <!-- ================= HOME ================= -->
+    <!-- HOME -->
 
     <section id="homeScreen" class="screen hidden">
 
@@ -114,7 +123,7 @@
 
             <p>
                 Welcome,
-                <strong id="currentUser"></strong>
+                <strong id="currentUsername"></strong>
             </p>
 
             <p class="player-info">
@@ -131,7 +140,7 @@
 
             <input
                 type="text"
-                id="roomCode"
+                id="roomCodeInput"
                 placeholder="Enter Room Code"
             >
 
@@ -139,7 +148,10 @@
                 JOIN VILLAGE
             </button>
 
-            <button class="logout" onclick="logout()">
+            <button
+                class="logout"
+                onclick="logout()"
+            >
                 LOG OUT
             </button>
 
@@ -150,7 +162,7 @@
     </section>
 
 
-    <!-- ================= LOBBY ================= -->
+    <!-- LOBBY -->
 
     <section id="lobbyScreen" class="screen hidden">
 
@@ -159,12 +171,16 @@
             <h2>Village Lobby</h2>
 
             <div class="room-code">
-                ROOM:
-                <strong id="displayRoomCode"></strong>
+                ROOM CODE:
+                <strong id="roomCodeDisplay"></strong>
             </div>
 
-            <p class="player-info">
-                Minimum: 3 players | Maximum: 20 players
+            <p class="center">
+                Share this code with your friends.
+            </p>
+
+            <p class="player-info center">
+                Minimum 3 players • Maximum 20 players
             </p>
 
             <h3>Players</h3>
@@ -174,15 +190,15 @@
             <p id="playerCount"></p>
 
             <button
-                id="startGameButton"
+                id="startButton"
                 onclick="startGame()"
             >
                 START GAME
             </button>
 
             <button
-                onclick="leaveRoom()"
                 class="logout"
+                onclick="leaveRoom()"
             >
                 LEAVE VILLAGE
             </button>
@@ -192,7 +208,7 @@
     </section>
 
 
-    <!-- ================= GAME ================= -->
+    <!-- GAME -->
 
     <section id="gameScreen" class="screen hidden">
 
@@ -201,13 +217,11 @@
             <div class="game-header">
 
                 <div>
-
                     <h2>SILENT VILLAGE</h2>
 
                     <p id="phaseText">
-                        Explore the village.
+                        Waiting for the game...
                     </p>
-
                 </div>
 
                 <div class="timer">
@@ -241,10 +255,12 @@
 
                 <h3>WOLF SECRET WORD</h3>
 
-                <div id="secretWord"></div>
+                <div id="secretWord">
+                    ----
+                </div>
 
                 <p>
-                    Keep this secret!
+                    Do not reveal this word.
                 </p>
 
             </div>
@@ -255,6 +271,7 @@
             <div class="village">
 
                 <div class="location">
+
                     🏠
 
                     <span>
@@ -269,6 +286,7 @@
 
 
                 <div class="location">
+
                     🌲
 
                     <span>
@@ -283,6 +301,7 @@
 
 
                 <div class="location">
+
                     ⛪
 
                     <span>
@@ -297,6 +316,7 @@
 
 
                 <div class="location">
+
                     🏪
 
                     <span>
@@ -311,6 +331,7 @@
 
 
                 <div class="location">
+
                     🏚️
 
                     <span>
@@ -325,6 +346,7 @@
 
 
                 <div class="location">
+
                     🌊
 
                     <span>
@@ -347,11 +369,7 @@
                 <h3>Your Clues</h3>
 
                 <div id="clueList">
-
-                    <p>
-                        No clues discovered yet.
-                    </p>
-
+                    <p>No clues yet.</p>
                 </div>
 
             </div>
@@ -359,34 +377,28 @@
 
             <!-- ACTIONS -->
 
-            <div
-                id="actionPanel"
-                class="panel"
-            >
+            <div class="panel">
 
                 <h3>Actions</h3>
 
                 <button
-                    id="meetingButton"
-                    onclick="startMeeting()"
+                    onclick="callMeeting()"
                 >
                     CALL MEETING
                 </button>
 
-
                 <button
-                    id="wolfKillButton"
-                    onclick="wolfKill()"
+                    id="killButton"
                     class="danger hidden"
+                    onclick="wolfKill()"
                 >
                     KILL PLAYER
                 </button>
 
-
                 <button
-                    id="sheriffButton"
-                    onclick="sheriffShoot()"
+                    id="shootButton"
                     class="danger hidden"
+                    onclick="sheriffShoot()"
                 >
                     SHOOT WOLF
                 </button>
@@ -404,7 +416,7 @@
                 <h3>Village Meeting</h3>
 
                 <p>
-                    Discuss the clues and guess the Wolf's secret word.
+                    Discuss and try to discover the Wolf.
                 </p>
 
                 <input
@@ -413,16 +425,18 @@
                     placeholder="Guess the secret word"
                 >
 
-                <button onclick="submitGuess()">
-                    SUBMIT GUESS
+                <button onclick="guessWord()">
+                    GUESS WORD
                 </button>
+
+                <h4>Vote a Player</h4>
 
                 <div id="voteList"></div>
 
             </div>
 
 
-            <!-- LOG -->
+            <!-- EVENTS -->
 
             <div class="panel">
 
@@ -437,7 +451,7 @@
     </section>
 
 
-    <!-- ================= GAME OVER ================= -->
+    <!-- GAME OVER -->
 
     <section
         id="gameOverScreen"
@@ -447,7 +461,7 @@
         <div class="card">
 
             <h1 id="winnerText">
-                VILLAGERS WIN!
+                GAME OVER
             </h1>
 
             <p id="winnerDescription"></p>
@@ -461,6 +475,7 @@
     </section>
 
 
+    <script src="firebase-config.js"></script>
     <script src="script.js"></script>
 
 </body>

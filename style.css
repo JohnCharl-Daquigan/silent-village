@@ -8,7 +8,7 @@ body {
     font-family: Arial, sans-serif;
     min-height: 100vh;
     color: white;
-    background: #111;
+    background: #101010;
 }
 
 .background {
@@ -18,13 +18,13 @@ body {
 
     background:
         linear-gradient(
-            rgba(0, 0, 0, 0.7),
-            rgba(0, 0, 0, 0.9)
+            rgba(0, 0, 0, 0.75),
+            rgba(0, 0, 0, 0.95)
         ),
         radial-gradient(
             circle at top,
             #34495e,
-            #111 70%
+            #101010 70%
         );
 }
 
@@ -40,7 +40,7 @@ header h1 {
 }
 
 header p {
-    color: #ccc;
+    color: #aaa;
     margin-top: 8px;
 }
 
@@ -57,7 +57,7 @@ header p {
 
 .card,
 .game-card {
-    background: rgba(20, 20, 20, 0.94);
+    background: rgba(20, 20, 20, 0.96);
     border: 1px solid #444;
     border-radius: 15px;
     padding: 30px;
@@ -70,8 +70,7 @@ header p {
     text-align: center;
 }
 
-.card h2,
-.game-card h2 {
+.card h2 {
     margin-bottom: 25px;
 }
 
@@ -96,12 +95,10 @@ button {
     color: white;
     font-weight: bold;
     cursor: pointer;
-    transition: 0.2s;
 }
 
 button:hover {
     background: #e74c3c;
-    transform: translateY(-1px);
 }
 
 .logout {
@@ -125,7 +122,11 @@ button:hover {
 
 .player-info {
     color: #aaa;
-    margin: 10px 0 15px;
+    margin: 10px 0;
+}
+
+.center {
+    text-align: center;
 }
 
 #loginMessage,
@@ -137,24 +138,26 @@ button:hover {
 
 .room-code {
     background: #111;
-    padding: 15px;
+    padding: 18px;
     text-align: center;
     border-radius: 8px;
-    margin-bottom: 20px;
+    margin: 20px 0;
     font-size: 20px;
+}
+
+#roomCodeDisplay {
+    color: #e74c3c;
+    letter-spacing: 3px;
 }
 
 #playerList {
     display: grid;
-
     grid-template-columns:
         repeat(
             auto-fit,
             minmax(150px, 1fr)
         );
-
     gap: 10px;
-
     margin: 20px 0;
 }
 
@@ -191,7 +194,6 @@ button:hover {
     font-size: 30px;
     font-weight: bold;
     margin: 10px;
-    color: #e74c3c;
 }
 
 .secret-box {
@@ -211,15 +213,12 @@ button:hover {
 
 .village {
     display: grid;
-
     grid-template-columns:
         repeat(
             auto-fit,
             minmax(220px, 1fr)
         );
-
     gap: 15px;
-
     margin: 25px 0;
 }
 
@@ -277,12 +276,17 @@ button:hover {
 
 .vote-player {
     display: flex;
-    gap: 10px;
     align-items: center;
+    gap: 10px;
     margin-top: 10px;
 }
 
+.vote-player span {
+    flex: 1;
+}
+
 .vote-player button {
+    width: 100px;
     margin: 0;
 }
 
