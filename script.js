@@ -1,14 +1,11 @@
-/* =====================================================
+/* ==========================================
    SILENT VILLAGE
    ONLINE MULTIPLAYER
-   3 - 20 PLAYERS
-   ===================================================== */
+   USERNAME + PASSWORD
+   ========================================== */
 
 
-/* ================= GAME DATA ================= */
-
-const secretWords = [
-
+const WORDS = [
     "APPLE",
     "RIVER",
     "MOON",
@@ -24,76 +21,69 @@ const secretWords = [
     "RAIN",
     "TREE",
     "GOLD"
-
 ];
 
 
-const clueDatabase = {
+const CLUES = {
 
     house: [
         "Someone lives here.",
-        "It has walls.",
-        "It provides shelter."
+        "It provides shelter.",
+        "It has walls."
     ],
 
     forest: [
-        "It contains trees.",
+        "There are many trees.",
         "Animals may live here.",
         "It is outside the village."
     ],
 
     church: [
         "People gather here.",
-        "There is usually a bell.",
+        "There may be a bell.",
         "It is an old building."
     ],
 
     market: [
         "People buy things here.",
-        "There are many goods.",
+        "Many goods can be found here.",
         "Villagers visit this place."
     ],
 
     barn: [
         "Animals may stay here.",
-        "It is usually made of wood.",
-        "It is used for storage."
+        "It can be used for storage.",
+        "It is often made of wood."
     ],
 
     river: [
         "Water flows here.",
-        "It can be found outside.",
-        "Fish may live here."
+        "Fish may live here.",
+        "It is outside the village."
     ]
 
 };
 
 
-/* ================= VARIABLES ================= */
-
 let currentUser = null;
-
 let currentUsername = null;
-
 let currentRoom = null;
-
+let roomRef = null;
 let roomListener = null;
-
 let timerInterval = null;
+let lastTimer = null;
 
-let clues = [];
 
-
-/* ================= SCREEN ================= */
+/* ==========================================
+   SCREEN FUNCTIONS
+   ========================================== */
 
 function hideScreens() {
 
     document
         .querySelectorAll(".screen")
         .forEach(screen => {
-
             screen.classList.add("hidden");
-
         });
 
 }
@@ -110,33 +100,39 @@ function showScreen(id) {
 }
 
 
-/* ================= SIGN UP ================= */
-
 function showSignup() {
-
     showScreen("signupScreen");
-
 }
 
 
 function showLogin() {
-
     showScreen("loginScreen");
+}
+
+
+/* ==========================================
+   USERNAME
+   ========================================== */
+
+function makeEmail(username) {
+
+    return username
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        + "@silentvillage.local";
 
 }
 
+
+/* ==========================================
+   SIGN UP
+   ========================================== */
 
 async function signup() {
 
     const username =
         document
             .getElementById("signupUsername")
-            .value
-            .trim();
-
-    const email =
-        document
-            .getElementById("signupEmail")
             .value
             .trim();
 
@@ -151,58 +147,61 @@ async function signup() {
             .value;
 
     const message =
-        document.getElementById(
-            "signupMessage"
-        );
+        document
+            .getElementById("signupMessage");
 
 
-    if (
-        !username ||
-        !email ||
-        !password
-    ) {
+    message.style.color = "#e74c3c";
+
+
+    if (!username || !password || !confirm) {
 
         message.textContent =
-            "Complete all fields.";
+            "Please complete all fields.";
 
         return;
-
     }
 
 
-    if (
-        password !==
-        confirm
-    ) {
+    if (username.length < 3) {
 
         message.textContent =
-            "Passwords do not match.";
+            "Username must be at least 3 characters.";
 
         return;
-
     }
 
 
-    if (
-        password.length <
-        6
-    ) {
+    if (password.length < 6) {
 
         message.textContent =
             "Password must be at least 6 characters.";
 
         return;
+    }
 
+
+    if (password !== confirm) {
+
+        message.textContent =
+            "Passwords do not match.";
+
+        return;
     }
 
 
     try {
 
+        const email =
+            makeEmail(username);
+
+
         const result =
-            await auth.createUserWithEmailAndPassword(
-                email,
-                password
-            );
+            await auth
+                .createUserWithEmailAndPassword(
+                    email,
+                    password
+                );
 
 
         await database
@@ -211,11 +210,8 @@ async function signup() {
                 result.user.uid
             )
             .set({
-
                 username: username,
-
-                email: email
-
+                createdAt: Date.now()
             });
 
 
@@ -226,29 +222,59 @@ async function signup() {
             "Account created!";
 
 
+        document
+            .getElementById("signupUsername")
+            .value = "";
+
+        document
+            .getElementById("signupPassword")
+            .value = "";
+
+        document
+            .getElementById("signupConfirm")
+            .value = "";
+
+
         setTimeout(
-            showLogin,
-            1000
+            () => {
+                showScreen("homeScreen");
+            },
+            800
         );
 
 
     } catch (error) {
 
-        message.textContent =
-            error.message;
+        console.error(error);
+
+        if (
+            error.code ===
+            "auth/email-already-in-use"
+        ) {
+
+            message.textContent =
+                "Username already exists.";
+
+        } else {
+
+            message.textContent =
+                error.message;
+        }
 
     }
 
 }
 
 
-/* ================= LOGIN ================= */
+/* ==========================================
+   LOGIN
+   ========================================== */
 
 async function login() {
 
-    const email =
+    const username =
         document
-            .getElementById("loginEmail")
+            .getElementById("loginUsername")
             .value
             .trim();
 
@@ -258,12 +284,24 @@ async function login() {
             .value;
 
     const message =
-        document.getElementById(
-            "loginMessage"
-        );
+        document
+            .getElementById("loginMessage");
+
+
+    if (!username || !password) {
+
+        message.textContent =
+            "Enter your username and password.";
+
+        return;
+    }
 
 
     try {
+
+        const email =
+            makeEmail(username);
+
 
         await auth
             .signInWithEmailAndPassword(
@@ -274,54 +312,35 @@ async function login() {
 
     } catch (error) {
 
+        console.error(error);
+
         message.textContent =
-            error.message;
+            "Incorrect username or password.";
 
     }
 
 }
 
 
-/* ================= LOGOUT ================= */
-
-async function logout() {
-
-    if (currentRoom) {
-
-        await leaveRoom();
-
-    }
-
-
-    await auth.signOut();
-
-}
-
-
-/* ================= AUTH STATE ================= */
+/* ==========================================
+   AUTH STATE
+   ========================================== */
 
 auth.onAuthStateChanged(
     async user => {
 
         if (!user) {
 
-            currentUser =
-                null;
+            currentUser = null;
+            currentUsername = null;
 
-            currentUsername =
-                null;
-
-            showScreen(
-                "loginScreen"
-            );
+            showScreen("loginScreen");
 
             return;
-
         }
 
 
-        currentUser =
-            user;
+        currentUser = user;
 
 
         const snapshot =
@@ -339,7 +358,7 @@ auth.onAuthStateChanged(
 
         currentUsername =
             data?.username ||
-            user.email;
+            "Player";
 
 
         document
@@ -350,72 +369,70 @@ auth.onAuthStateChanged(
             currentUsername;
 
 
-        showScreen(
-            "homeScreen"
-        );
+        showScreen("homeScreen");
 
     }
 );
 
 
-/* ================= ROOM CODE ================= */
+/* ==========================================
+   LOGOUT
+   ========================================== */
+
+async function logout() {
+
+    if (currentRoom) {
+
+        await leaveRoom();
+
+    }
+
+    await auth.signOut();
+
+}
+
+
+/* ==========================================
+   ROOM CODE
+   ========================================== */
 
 function generateRoomCode() {
 
-    const characters =
+    const chars =
         "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
     let code = "";
 
-
-    for (
-        let i = 0;
-        i < 5;
-        i++
-    ) {
+    for (let i = 0; i < 6; i++) {
 
         code +=
-            characters[
+            chars[
                 Math.floor(
                     Math.random() *
-                    characters.length
+                    chars.length
                 )
             ];
 
     }
-
 
     return code;
 
 }
 
 
-/* ================= CREATE ROOM ================= */
+/* ==========================================
+   CREATE ROOM
+   ========================================== */
 
 async function createRoom() {
 
-    let code =
-        generateRoomCode();
+    try {
 
-
-    let snapshot =
-        await database
-            .ref(
-                "rooms/" +
-                code
-            )
-            .once("value");
-
-
-    while (
-        snapshot.exists()
-    ) {
-
-        code =
+        let code =
             generateRoomCode();
 
 
-        snapshot =
+        let snapshot =
             await database
                 .ref(
                     "rooms/" +
@@ -423,48 +440,69 @@ async function createRoom() {
                 )
                 .once("value");
 
+
+        while (snapshot.exists()) {
+
+            code =
+                generateRoomCode();
+
+            snapshot =
+                await database
+                    .ref(
+                        "rooms/" +
+                        code
+                    )
+                    .once("value");
+
+        }
+
+
+        currentRoom = code;
+
+
+        await database
+            .ref(
+                "rooms/" +
+                code
+            )
+            .set({
+
+                host:
+                    currentUser.uid,
+
+                status:
+                    "lobby",
+
+                createdAt:
+                    Date.now()
+
+            });
+
+
+        await addPlayer(code);
+
+        listenToRoom();
+
+        showScreen("lobbyScreen");
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Could not create village: " +
+            error.message
+        );
+
     }
-
-
-    currentRoom =
-        code;
-
-
-    await database
-        .ref(
-            "rooms/" +
-            code
-        )
-        .set({
-
-            host:
-                currentUser.uid,
-
-            status:
-                "lobby",
-
-            createdAt:
-                Date.now()
-
-        });
-
-
-    await addPlayer(
-        code
-    );
-
-
-    listenToRoom();
-
-
-    showScreen(
-        "lobbyScreen"
-    );
 
 }
 
 
-/* ================= JOIN ROOM ================= */
+/* ==========================================
+   JOIN ROOM
+   ========================================== */
 
 async function joinRoom() {
 
@@ -477,11 +515,11 @@ async function joinRoom() {
             .trim()
             .toUpperCase();
 
-
     const message =
-        document.getElementById(
-            "roomMessage"
-        );
+        document
+            .getElementById(
+                "roomMessage"
+            );
 
 
     if (!input) {
@@ -490,119 +528,115 @@ async function joinRoom() {
             "Enter a room code.";
 
         return;
-
     }
 
 
-    const snapshot =
-        await database
-            .ref(
-                "rooms/" +
-                input
-            )
-            .once("value");
+    try {
+
+        const snapshot =
+            await database
+                .ref(
+                    "rooms/" +
+                    input
+                )
+                .once("value");
 
 
-    if (!snapshot.exists()) {
+        if (!snapshot.exists()) {
+
+            message.textContent =
+                "Village not found.";
+
+            return;
+        }
+
+
+        const room =
+            snapshot.val();
+
+
+        if (room.status !== "lobby") {
+
+            message.textContent =
+                "This game has already started.";
+
+            return;
+        }
+
+
+        const players =
+            room.players || {};
+
+
+        if (
+            Object.keys(players).length >= 20
+        ) {
+
+            message.textContent =
+                "Village is full.";
+
+            return;
+        }
+
+
+        currentRoom = input;
+
+
+        await addPlayer(input);
+
+        listenToRoom();
+
+        showScreen("lobbyScreen");
+
+
+    } catch (error) {
 
         message.textContent =
-            "Room not found.";
-
-        return;
+            error.message;
 
     }
-
-
-    const room =
-        snapshot.val();
-
-
-    if (
-        room.status !==
-        "lobby"
-    ) {
-
-        message.textContent =
-            "This game has already started.";
-
-        return;
-
-    }
-
-
-    const players =
-        room.players || {};
-
-
-    if (
-        Object.keys(players).length >=
-        20
-    ) {
-
-        message.textContent =
-            "This village is full.";
-
-        return;
-
-    }
-
-
-    currentRoom =
-        input;
-
-
-    await addPlayer(
-        input
-    );
-
-
-    listenToRoom();
-
-
-    showScreen(
-        "lobbyScreen"
-    );
 
 }
 
 
-/* ================= ADD PLAYER ================= */
+/* ==========================================
+   ADD PLAYER
+   ========================================== */
 
 async function addPlayer(code) {
 
-    const playerRef =
-        database
-            .ref(
-                "rooms/" +
-                code +
-                "/players/" +
-                currentUser.uid
-            );
+    await database
+        .ref(
+            "rooms/" +
+            code +
+            "/players/" +
+            currentUser.uid
+        )
+        .set({
 
+            uid:
+                currentUser.uid,
 
-    await playerRef.set({
+            username:
+                currentUsername,
 
-        uid:
-            currentUser.uid,
+            alive:
+                true,
 
-        username:
-            currentUsername,
+            role:
+                "",
 
-        alive:
-            true,
+            joinedAt:
+                Date.now()
 
-        role:
-            "",
-
-        votes:
-            0
-
-    });
+        });
 
 }
 
 
-/* ================= ROOM LISTENER ================= */
+/* ==========================================
+   LISTEN TO ROOM
+   ========================================== */
 
 function listenToRoom() {
 
@@ -613,11 +647,15 @@ function listenToRoom() {
     }
 
 
-    roomListener =
+    roomRef =
         database.ref(
             "rooms/" +
             currentRoom
         );
+
+
+    roomListener =
+        roomRef;
 
 
     roomListener.on(
@@ -630,12 +668,11 @@ function listenToRoom() {
 
             if (!room) {
 
-                showScreen(
-                    "homeScreen"
-                );
+                currentRoom = null;
+
+                showScreen("homeScreen");
 
                 return;
-
             }
 
 
@@ -648,10 +685,7 @@ function listenToRoom() {
                     "lobbyScreen"
                 );
 
-
-                updateLobby(
-                    room
-                );
+                updateLobby(room);
 
             }
 
@@ -665,10 +699,7 @@ function listenToRoom() {
                     "gameScreen"
                 );
 
-
-                updateGame(
-                    room
-                );
+                updateGame(room);
 
             }
 
@@ -682,15 +713,9 @@ function listenToRoom() {
                     "gameScreen"
                 );
 
+                updateGame(room);
 
-                updateGame(
-                    room
-                );
-
-
-                showMeeting(
-                    room
-                );
+                showMeeting(room);
 
             }
 
@@ -700,9 +725,7 @@ function listenToRoom() {
                 "ended"
             ) {
 
-                showGameOver(
-                    room
-                );
+                showGameOver(room);
 
             }
 
@@ -712,7 +735,9 @@ function listenToRoom() {
 }
 
 
-/* ================= UPDATE LOBBY ================= */
+/* ==========================================
+   LOBBY
+   ========================================== */
 
 function updateLobby(room) {
 
@@ -730,21 +755,16 @@ function updateLobby(room) {
         );
 
 
-    list.innerHTML =
-        "";
+    list.innerHTML = "";
 
 
     const players =
-        room.players || {};
-
-
-    const playerArray =
         Object.values(
-            players
+            room.players || {}
         );
 
 
-    playerArray.forEach(
+    players.forEach(
         player => {
 
             const div =
@@ -752,18 +772,25 @@ function updateLobby(room) {
                     "div"
                 );
 
-
             div.className =
                 "player";
-
 
             div.textContent =
                 player.username;
 
 
-            list.appendChild(
-                div
-            );
+            if (
+                player.uid ===
+                room.host
+            ) {
+
+                div.textContent +=
+                    " 👑";
+
+            }
+
+
+            list.appendChild(div);
 
         }
     );
@@ -774,7 +801,7 @@ function updateLobby(room) {
             "playerCount"
         )
         .textContent =
-        `${playerArray.length} / 20 players`;
+        `${players.length} / 20 players`;
 
 
     const startButton =
@@ -803,7 +830,9 @@ function updateLobby(room) {
 }
 
 
-/* ================= START GAME ================= */
+/* ==========================================
+   START GAME
+   ========================================== */
 
 async function startGame() {
 
@@ -820,40 +849,6 @@ async function startGame() {
         snapshot.val();
 
 
-    const players =
-        Object.values(
-            room.players || {}
-        );
-
-
-    if (
-        players.length <
-        3
-    ) {
-
-        alert(
-            "At least 3 players are required."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        players.length >
-        20
-    ) {
-
-        alert(
-            "Maximum 20 players."
-        );
-
-        return;
-
-    }
-
-
     if (
         room.host !==
         currentUser.uid
@@ -864,48 +859,55 @@ async function startGame() {
     }
 
 
-    assignRoles(
-        players
-    );
+    const players =
+        Object.values(
+            room.players || {}
+        );
+
+
+    if (players.length < 3) {
+
+        alert(
+            "At least 3 players are required."
+        );
+
+        return;
+    }
+
+
+    assignRoles(players);
 
 }
 
 
-/* ================= ASSIGN ROLES ================= */
+/* ==========================================
+   ASSIGN ROLES
+   ========================================== */
 
 async function assignRoles(players) {
 
     const shuffled =
-        [...players]
-            .sort(
-                () =>
-                    Math.random() -
-                    0.5
-            );
+        [...players].sort(
+            () =>
+                Math.random() -
+                0.5
+        );
 
 
     let wolfCount = 1;
-
     let sheriffCount = 1;
 
 
-    if (
-        players.length >=
-        10
-    ) {
+    if (players.length >= 10) {
 
         wolfCount = 2;
 
     }
 
 
-    if (
-        players.length >=
-        15
-    ) {
+    if (players.length >= 15) {
 
-        wolfCount = 2;
-
+        wolfCount = 3;
         sheriffCount = 2;
 
     }
@@ -949,18 +951,17 @@ async function assignRoles(players) {
                 "/players/" +
                 player.uid +
                 "/role"
-            ] =
-                role;
+            ] = role;
 
         }
     );
 
 
     const word =
-        secretWords[
+        WORDS[
             Math.floor(
                 Math.random() *
-                secretWords.length
+                WORDS.length
             )
         ];
 
@@ -969,52 +970,47 @@ async function assignRoles(players) {
         "rooms/" +
         currentRoom +
         "/secretWord"
-    ] =
-        word;
+    ] = word;
 
 
     updates[
         "rooms/" +
         currentRoom +
         "/status"
-    ] =
-        "playing";
+    ] = "playing";
 
 
     updates[
         "rooms/" +
         currentRoom +
         "/phase"
-    ] =
-        "explore";
+    ] = "explore";
 
 
     updates[
         "rooms/" +
         currentRoom +
         "/timer"
-    ] =
-        60;
+    ] = 60;
 
 
     updates[
         "rooms/" +
         currentRoom +
         "/startedAt"
-    ] =
-        Date.now();
+    ] = Date.now();
 
 
     await database
         .ref()
-        .update(
-            updates
-        );
+        .update(updates);
 
 }
 
 
-/* ================= UPDATE GAME ================= */
+/* ==========================================
+   UPDATE GAME
+   ========================================== */
 
 function updateGame(room) {
 
@@ -1025,8 +1021,18 @@ function updateGame(room) {
 
 
     if (!player) {
-
         return;
+    }
+
+
+    if (!player.alive) {
+
+        document
+            .getElementById(
+                "roleDescription"
+            )
+            .textContent =
+            "You are dead. You can watch the village.";
 
     }
 
@@ -1036,10 +1042,9 @@ function updateGame(room) {
             "phaseText"
         )
         .textContent =
-        room.phase ===
-        "meeting"
+        room.phase === "meeting"
             ? "Village Meeting"
-            : "Explore the village.";
+            : "Explore the village";
 
 
     document
@@ -1050,21 +1055,21 @@ function updateGame(room) {
         player.role;
 
 
-    const description =
+    const roleDescription =
         document.getElementById(
             "roleDescription"
         );
 
 
-    const killButton =
+    const wolfAction =
         document.getElementById(
-            "killButton"
+            "wolfAction"
         );
 
 
-    const shootButton =
+    const sheriffAction =
         document.getElementById(
-            "shootButton"
+            "sheriffAction"
         );
 
 
@@ -1074,12 +1079,12 @@ function updateGame(room) {
         );
 
 
-    killButton.classList.add(
+    wolfAction.classList.add(
         "hidden"
     );
 
 
-    shootButton.classList.add(
+    sheriffAction.classList.add(
         "hidden"
     );
 
@@ -1102,13 +1107,8 @@ function updateGame(room) {
             "#e74c3c";
 
 
-        description.textContent =
-            "Eliminate players and protect the secret word.";
-
-
-        killButton.classList.remove(
-            "hidden"
-        );
+        roleDescription.textContent =
+            "Eliminate the villagers and protect the secret word.";
 
 
         secretBox.classList.remove(
@@ -1123,8 +1123,16 @@ function updateGame(room) {
             .textContent =
             room.secretWord;
 
-    }
 
+        if (player.alive) {
+
+            wolfAction.classList.remove(
+                "hidden"
+            );
+
+        }
+
+    }
 
     else if (
         player.role ===
@@ -1139,16 +1147,19 @@ function updateGame(room) {
             "#3498db";
 
 
-        description.textContent =
-            "Find the Wolf and stop them.";
+        roleDescription.textContent =
+            "Find and stop the Wolf.";
 
 
-        shootButton.classList.remove(
-            "hidden"
-        );
+        if (player.alive) {
+
+            sheriffAction.classList.remove(
+                "hidden"
+            );
+
+        }
 
     }
-
 
     else {
 
@@ -1160,25 +1171,22 @@ function updateGame(room) {
             "#2ecc71";
 
 
-        description.textContent =
-            "Find clues and discover the Wolf's secret word.";
+        roleDescription.textContent =
+            "Find clues and discover the Wolf.";
 
     }
 
 
-    updateTimer(
-        room
-    );
+    updateTimer(room);
 
-
-    displayAlivePlayers(
-        room
-    );
+    loadClues();
 
 }
 
 
-/* ================= TIMER ================= */
+/* ==========================================
+   TIMER
+   ========================================== */
 
 function updateTimer(room) {
 
@@ -1188,14 +1196,28 @@ function updateTimer(room) {
         );
 
 
+    const value =
+        room.timer || 0;
+
+
     timer.textContent =
-        room.timer ||
-        0;
+        value;
+
+
+    if (
+        lastTimer !== value
+    ) {
+
+        lastTimer = value;
+
+    }
 
 }
 
 
-/* ================= SEARCH ================= */
+/* ==========================================
+   SEARCH LOCATION
+   ========================================== */
 
 async function searchLocation(location) {
 
@@ -1225,14 +1247,11 @@ async function searchLocation(location) {
 
 
     if (
-        player.role ===
-        "WOLF"
+        roomIsMeeting()
     ) {
 
-        addEvent(
-            "The Wolf searched the " +
-            location +
-            "."
+        alert(
+            "Wait until the meeting ends."
         );
 
         return;
@@ -1241,9 +1260,7 @@ async function searchLocation(location) {
 
 
     const clues =
-        clueDatabase[
-            location
-        ];
+        CLUES[location];
 
 
     const clue =
@@ -1268,25 +1285,79 @@ async function searchLocation(location) {
             "/" +
             clueId
         )
-        .set(
-            clue
-        );
+        .set(clue);
 
 
-    addEvent(
+    await addEvent(
         currentUsername +
-        " discovered a clue."
+        " found a clue."
     );
 
 
-    displayClue(
-        clue
-    );
+    displayClue(clue);
 
 }
 
 
-/* ================= DISPLAY CLUE ================= */
+/* ==========================================
+   LOAD CLUES
+   ========================================== */
+
+async function loadClues() {
+
+    const snapshot =
+        await database
+            .ref(
+                "rooms/" +
+                currentRoom +
+                "/clues/" +
+                currentUser.uid
+            )
+            .once("value");
+
+
+    const clues =
+        snapshot.val() || {};
+
+
+    const list =
+        document.getElementById(
+            "clueList"
+        );
+
+
+    list.innerHTML = "";
+
+
+    if (
+        Object.keys(clues).length === 0
+    ) {
+
+        list.innerHTML =
+            '<p class="small">No clues discovered yet.</p>';
+
+        return;
+
+    }
+
+
+    Object.values(clues)
+        .forEach(
+            clue => {
+
+                displayClue(
+                    clue
+                );
+
+            }
+        );
+
+}
+
+
+/* ==========================================
+   DISPLAY CLUE
+   ========================================== */
 
 function displayClue(clue) {
 
@@ -1310,19 +1381,23 @@ function displayClue(clue) {
         clue;
 
 
-    list.appendChild(
-        div
-    );
+    list.appendChild(div);
 
 }
 
 
-/* ================= ADD EVENT ================= */
+/* ==========================================
+   EVENTS
+   ========================================== */
 
 async function addEvent(message) {
 
-    const eventId =
-        Date.now();
+    const id =
+        Date.now() +
+        "-" +
+        Math.random()
+            .toString(36)
+            .substring(2);
 
 
     await database
@@ -1330,7 +1405,7 @@ async function addEvent(message) {
             "rooms/" +
             currentRoom +
             "/events/" +
-            eventId
+            id
         )
         .set({
 
@@ -1342,15 +1417,29 @@ async function addEvent(message) {
 
         });
 
-
-    displayEvent(
-        message
-    );
-
 }
 
 
-function displayEvent(message) {
+/* ==========================================
+   LOAD EVENTS
+   ========================================== */
+
+async function loadEvents() {
+
+    const snapshot =
+        await database
+            .ref(
+                "rooms/" +
+                currentRoom +
+                "/events"
+            )
+            .limitToLast(30)
+            .once("value");
+
+
+    const events =
+        snapshot.val() || {};
+
 
     const log =
         document.getElementById(
@@ -1358,32 +1447,47 @@ function displayEvent(message) {
         );
 
 
-    const div =
-        document.createElement(
-            "div"
+    log.innerHTML = "";
+
+
+    Object.values(events)
+        .sort(
+            (a, b) =>
+                b.time -
+                a.time
+        )
+        .forEach(
+            event => {
+
+                const div =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                div.className =
+                    "log";
+
+
+                div.textContent =
+                    event.message;
+
+
+                log.appendChild(div);
+
+            }
         );
-
-
-    div.className =
-        "log-entry";
-
-
-    div.textContent =
-        message;
-
-
-    log.prepend(
-        div
-    );
 
 }
 
 
-/* ================= WOLF KILL ================= */
+/* ==========================================
+   WOLF TARGET
+   ========================================== */
 
-async function wolfKill() {
+async function openWolfTarget() {
 
-    const roomSnapshot =
+    const snapshot =
         await database
             .ref(
                 "rooms/" +
@@ -1393,18 +1497,18 @@ async function wolfKill() {
 
 
     const room =
-        roomSnapshot.val();
+        snapshot.val();
 
 
-    const wolf =
-        room.players?.[
+    const me =
+        room.players[
             currentUser.uid
         ];
 
 
     if (
-        wolf?.role !==
-        "WOLF"
+        me.role !== "WOLF" ||
+        !me.alive
     ) {
 
         return;
@@ -1412,20 +1516,94 @@ async function wolfKill() {
     }
 
 
-    const targets =
-        Object.values(
-            room.players || {}
-        ).filter(
-            player =>
-                player.alive &&
-                player.role !==
-                "WOLF"
+    document
+        .getElementById(
+            "targetPanel"
+        )
+        .classList.remove(
+            "hidden"
         );
 
 
+    document
+        .getElementById(
+            "targetTitle"
+        )
+        .textContent =
+        "Choose a player to eliminate";
+
+
+    const list =
+        document.getElementById(
+            "targetList"
+        );
+
+
+    list.innerHTML = "";
+
+
+    Object.values(room.players)
+        .filter(
+            player =>
+                player.alive &&
+                player.role !== "WOLF"
+        )
+        .forEach(
+            player => {
+
+                const div =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                div.className =
+                    "target";
+
+
+                div.innerHTML =
+                    `<span>${player.username}</span>
+                     <button onclick="wolfKill('${player.uid}')">
+                     ELIMINATE
+                     </button>`;
+
+
+                list.appendChild(div);
+
+            }
+        );
+
+}
+
+
+/* ==========================================
+   WOLF KILL
+   ========================================== */
+
+async function wolfKill(targetUid) {
+
+    const snapshot =
+        await database
+            .ref(
+                "rooms/" +
+                currentRoom
+            )
+            .once("value");
+
+
+    const room =
+        snapshot.val();
+
+
+    const wolf =
+        room.players[
+            currentUser.uid
+        ];
+
+
     if (
-        targets.length ===
-        0
+        wolf.role !== "WOLF" ||
+        !wolf.alive
     ) {
 
         return;
@@ -1434,12 +1612,18 @@ async function wolfKill() {
 
 
     const target =
-        targets[
-            Math.floor(
-                Math.random() *
-                targets.length
-            )
-        ];
+        room.players[targetUid];
+
+
+    if (
+        !target ||
+        !target.alive ||
+        target.role === "WOLF"
+    ) {
+
+        return;
+
+    }
 
 
     await database
@@ -1447,12 +1631,10 @@ async function wolfKill() {
             "rooms/" +
             currentRoom +
             "/players/" +
-            target.uid +
+            targetUid +
             "/alive"
         )
-        .set(
-            false
-        );
+        .set(false);
 
 
     await addEvent(
@@ -1461,14 +1643,121 @@ async function wolfKill() {
     );
 
 
+    document
+        .getElementById(
+            "targetPanel"
+        )
+        .classList.add(
+            "hidden"
+        );
+
+
     checkWin();
 
 }
 
 
-/* ================= SHERIFF ================= */
+/* ==========================================
+   SHERIFF TARGET
+   ========================================== */
 
-async function sheriffShoot() {
+async function openSheriffTarget() {
+
+    const snapshot =
+        await database
+            .ref(
+                "rooms/" +
+                currentRoom
+            )
+            .once("value");
+
+
+    const room =
+        snapshot.val();
+
+
+    const me =
+        room.players[
+            currentUser.uid
+        ];
+
+
+    if (
+        me.role !== "SHERIFF" ||
+        !me.alive
+    ) {
+
+        return;
+
+    }
+
+
+    document
+        .getElementById(
+            "targetPanel"
+        )
+        .classList.remove(
+            "hidden"
+        );
+
+
+    document
+        .getElementById(
+            "targetTitle"
+        )
+        .textContent =
+        "Choose a player to investigate";
+
+
+    const list =
+        document.getElementById(
+            "targetList"
+        );
+
+
+    list.innerHTML = "";
+
+
+    Object.values(room.players)
+        .filter(
+            player =>
+                player.alive &&
+                player.uid !==
+                currentUser.uid
+        )
+        .forEach(
+            player => {
+
+                const div =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                div.className =
+                    "target";
+
+
+                div.innerHTML =
+                    `<span>${player.username}</span>
+                     <button onclick="sheriffInvestigate('${player.uid}')">
+                     INVESTIGATE
+                     </button>`;
+
+
+                list.appendChild(div);
+
+            }
+        );
+
+}
+
+
+/* ==========================================
+   SHERIFF INVESTIGATE
+   ========================================== */
+
+async function sheriffInvestigate(targetUid) {
 
     const snapshot =
         await database
@@ -1484,35 +1773,14 @@ async function sheriffShoot() {
 
 
     const sheriff =
-        room.players?.[
+        room.players[
             currentUser.uid
         ];
 
 
     if (
-        sheriff?.role !==
-        "SHERIFF"
-    ) {
-
-        return;
-
-    }
-
-
-    const wolves =
-        Object.values(
-            room.players || {}
-        ).filter(
-            player =>
-                player.alive &&
-                player.role ===
-                "WOLF"
-        );
-
-
-    if (
-        wolves.length ===
-        0
+        sheriff.role !== "SHERIFF" ||
+        !sheriff.alive
     ) {
 
         return;
@@ -1521,57 +1789,78 @@ async function sheriffShoot() {
 
 
     const target =
-        wolves[
-            Math.floor(
-                Math.random() *
-                wolves.length
+        room.players[targetUid];
+
+
+    if (!target || !target.alive) {
+
+        return;
+
+    }
+
+
+    if (
+        target.role ===
+        "WOLF"
+    ) {
+
+        alert(
+            target.username +
+            " IS THE WOLF!"
+        );
+
+
+        await database
+            .ref(
+                "rooms/" +
+                currentRoom +
+                "/players/" +
+                targetUid +
+                "/alive"
             )
-        ];
+            .set(false);
 
 
-    await database
-        .ref(
-            "rooms/" +
-            currentRoom +
-            "/players/" +
-            target.uid +
-            "/alive"
-        )
-        .set(
-            false
+        await addEvent(
+            "The Sheriff caught the Wolf!"
         );
 
 
-    await database
-        .ref(
-            "rooms/" +
-            currentRoom +
-            "/winner"
-        )
-        .set(
-            "SHERIFF"
+        await database
+            .ref(
+                "rooms/" +
+                currentRoom
+            )
+            .update({
+                status: "ended",
+                winner: "SHERIFF"
+            });
+
+
+    } else {
+
+        alert(
+            target.username +
+            " is NOT the Wolf."
         );
 
+    }
 
-    await database
-        .ref(
-            "rooms/" +
-            currentRoom +
-            "/status"
+
+    document
+        .getElementById(
+            "targetPanel"
         )
-        .set(
-            "ended"
+        .classList.add(
+            "hidden"
         );
-
-
-    await addEvent(
-        "The Sheriff caught the Wolf!"
-    );
 
 }
 
 
-/* ================= MEETING ================= */
+/* ==========================================
+   MEETING
+   ========================================== */
 
 async function callMeeting() {
 
@@ -1614,7 +1903,10 @@ async function callMeeting() {
                 "meeting",
 
             timer:
-                30
+                30,
+
+            votes:
+                {}
 
         });
 
@@ -1627,7 +1919,9 @@ async function callMeeting() {
 }
 
 
-/* ================= SHOW MEETING ================= */
+/* ==========================================
+   SHOW MEETING
+   ========================================== */
 
 function showMeeting(room) {
 
@@ -1640,14 +1934,14 @@ function showMeeting(room) {
         );
 
 
-    displayVotePlayers(
-        room
-    );
+    displayVotePlayers(room);
 
 }
 
 
-/* ================= DISPLAY VOTES ================= */
+/* ==========================================
+   VOTE PLAYERS
+   ========================================== */
 
 function displayVotePlayers(room) {
 
@@ -1657,17 +1951,10 @@ function displayVotePlayers(room) {
         );
 
 
-    list.innerHTML =
-        "";
+    list.innerHTML = "";
 
 
-    const players =
-        Object.values(
-            room.players || {}
-        );
-
-
-    players
+    Object.values(room.players)
         .filter(
             player =>
                 player.alive
@@ -1682,49 +1969,17 @@ function displayVotePlayers(room) {
 
 
                 div.className =
-                    "vote-player";
+                    "vote";
 
 
-                const name =
-                    document.createElement(
-                        "span"
-                    );
+                div.innerHTML =
+                    `<span>${player.username}</span>
+                     <button onclick="votePlayer('${player.uid}')">
+                     VOTE
+                     </button>`;
 
 
-                name.textContent =
-                    player.username;
-
-
-                const button =
-                    document.createElement(
-                        "button"
-                    );
-
-
-                button.textContent =
-                    "VOTE";
-
-
-                button.onclick =
-                    () =>
-                        votePlayer(
-                            player.uid
-                        );
-
-
-                div.appendChild(
-                    name
-                );
-
-
-                div.appendChild(
-                    button
-                );
-
-
-                list.appendChild(
-                    div
-                );
+                list.appendChild(div);
 
             }
         );
@@ -1732,23 +1987,46 @@ function displayVotePlayers(room) {
 }
 
 
-/* ================= VOTE ================= */
+/* ==========================================
+   VOTE
+   ========================================== */
 
 async function votePlayer(uid) {
 
-    const voteRef =
-        database
+    const snapshot =
+        await database
             .ref(
                 "rooms/" +
-                currentRoom +
-                "/votes/" +
-                currentUser.uid
-            );
+                currentRoom
+            )
+            .once("value");
 
 
-    await voteRef.set(
-        uid
-    );
+    const room =
+        snapshot.val();
+
+
+    const me =
+        room.players[
+            currentUser.uid
+        ];
+
+
+    if (!me || !me.alive) {
+
+        return;
+
+    }
+
+
+    await database
+        .ref(
+            "rooms/" +
+            currentRoom +
+            "/votes/" +
+            currentUser.uid
+        )
+        .set(uid);
 
 
     await addEvent(
@@ -1762,7 +2040,9 @@ async function votePlayer(uid) {
 }
 
 
-/* ================= CHECK VOTES ================= */
+/* ==========================================
+   CHECK VOTES
+   ========================================== */
 
 async function checkVotes() {
 
@@ -1779,10 +2059,11 @@ async function checkVotes() {
         snapshot.val();
 
 
-    const alivePlayers =
+    const alive =
         Object.values(
             room.players || {}
-        ).filter(
+        )
+        .filter(
             player =>
                 player.alive
         );
@@ -1794,7 +2075,7 @@ async function checkVotes() {
 
     if (
         Object.keys(votes).length <
-        alivePlayers.length
+        alive.length
     ) {
 
         return;
@@ -1805,54 +2086,52 @@ async function checkVotes() {
     const counts = {};
 
 
-    Object.values(
-        votes
-    ).forEach(
-        uid => {
+    Object.values(votes)
+        .forEach(
+            uid => {
 
-            counts[uid] =
-                (counts[uid] || 0) +
-                1;
-
-        }
-    );
-
-
-    let highest =
-        0;
-
-
-    let eliminated =
-        null;
-
-
-    Object.keys(
-        counts
-    ).forEach(
-        uid => {
-
-            if (
-                counts[uid] >
-                highest
-            ) {
-
-                highest =
-                    counts[uid];
-
-                eliminated =
-                    uid;
+                counts[uid] =
+                    (counts[uid] || 0) +
+                    1;
 
             }
+        );
 
-        }
-    );
+
+    let highest = 0;
+    let eliminated = null;
+
+
+    Object.keys(counts)
+        .forEach(
+            uid => {
+
+                if (
+                    counts[uid] >
+                    highest
+                ) {
+
+                    highest =
+                        counts[uid];
+
+                    eliminated =
+                        uid;
+
+                }
+
+            }
+        );
 
 
     if (!eliminated) {
-
         return;
-
     }
+
+
+    const target =
+        room.players[
+            eliminated
+        ];
 
 
     await database
@@ -1863,19 +2142,11 @@ async function checkVotes() {
             eliminated +
             "/alive"
         )
-        .set(
-            false
-        );
-
-
-    const eliminatedPlayer =
-        room.players[
-            eliminated
-        ];
+        .set(false);
 
 
     await addEvent(
-        eliminatedPlayer.username +
+        target.username +
         " was voted out."
     );
 
@@ -1908,12 +2179,23 @@ async function checkVotes() {
         });
 
 
+    document
+        .getElementById(
+            "meetingPanel"
+        )
+        .classList.add(
+            "hidden"
+        );
+
+
     checkWin();
 
 }
 
 
-/* ================= WORD GUESS ================= */
+/* ==========================================
+   SECRET WORD
+   ========================================== */
 
 async function guessWord() {
 
@@ -1930,9 +2212,7 @@ async function guessWord() {
 
 
     if (!guess) {
-
         return;
-
     }
 
 
@@ -1969,24 +2249,29 @@ async function guessWord() {
 
             });
 
-    }
 
-    else {
+    } else {
 
         await addEvent(
             currentUsername +
-            " made a wrong guess."
+            " guessed the secret word incorrectly."
         );
 
-        input.value =
-            "";
+
+        input.value = "";
+
+        alert(
+            "Wrong secret word!"
+        );
 
     }
 
 }
 
 
-/* ================= CHECK WIN ================= */
+/* ==========================================
+   CHECK WIN
+   ========================================== */
 
 async function checkWin() {
 
@@ -2019,22 +2304,19 @@ async function checkWin() {
     const wolves =
         alive.filter(
             player =>
-                player.role ===
-                "WOLF"
+                player.role === "WOLF"
         );
 
 
     const villagers =
         alive.filter(
             player =>
-                player.role !==
-                "WOLF"
+                player.role !== "WOLF"
         );
 
 
     if (
-        wolves.length ===
-        0
+        wolves.length === 0
     ) {
 
         await database
@@ -2051,6 +2333,7 @@ async function checkWin() {
                     "VILLAGERS"
 
             });
+
 
         return;
 
@@ -2082,14 +2365,11 @@ async function checkWin() {
 }
 
 
-/* ================= GAME OVER ================= */
+/* ==========================================
+   GAME OVER
+   ========================================== */
 
 function showGameOver(room) {
-
-    clearInterval(
-        timerInterval
-    );
-
 
     showScreen(
         "gameOverScreen"
@@ -2118,7 +2398,7 @@ function showGameOver(room) {
 
 
         description.textContent =
-            "The village discovered the Wolf's secret.";
+            "The village discovered the Wolf and survived.";
 
     }
 
@@ -2152,41 +2432,20 @@ function showGameOver(room) {
 }
 
 
-/* ================= RETURN HOME ================= */
+/* ==========================================
+   RETURN HOME
+   ========================================== */
 
 async function returnHome() {
 
-    if (currentRoom) {
-
-        await leaveRoom();
-
-    }
-
-
-    document
-        .getElementById(
-            "gameLog"
-        )
-        .innerHTML =
-        "";
-
-
-    document
-        .getElementById(
-            "clueList"
-        )
-        .innerHTML =
-        "<p>No clues yet.</p>";
-
-
-    showScreen(
-        "homeScreen"
-    );
+    await leaveRoom();
 
 }
 
 
-/* ================= LEAVE ROOM ================= */
+/* ==========================================
+   LEAVE ROOM
+   ========================================== */
 
 async function leaveRoom() {
 
@@ -2201,14 +2460,22 @@ async function leaveRoom() {
     }
 
 
-    await database
-        .ref(
-            "rooms/" +
-            currentRoom +
-            "/players/" +
-            currentUser.uid
-        )
-        .remove();
+    try {
+
+        await database
+            .ref(
+                "rooms/" +
+                currentRoom +
+                "/players/" +
+                currentUser.uid
+            )
+            .remove();
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
 
 
     if (roomListener) {
@@ -2225,6 +2492,21 @@ async function leaveRoom() {
         null;
 
 
+    document
+        .getElementById(
+            "gameLog"
+        )
+        .innerHTML = "";
+
+
+    document
+        .getElementById(
+            "clueList"
+        )
+        .innerHTML =
+        '<p class="small">No clues discovered yet.</p>';
+
+
     showScreen(
         "homeScreen"
     );
@@ -2232,12 +2514,12 @@ async function leaveRoom() {
 }
 
 
-/* ================= INITIALIZE ================= */
+/* ==========================================
+   MEETING CHECK
+   ========================================== */
 
-document
-    .getElementById(
-        "meetingPanel"
-    )
-    .classList.add(
-        "hidden"
-    );
+function roomIsMeeting() {
+
+    return false;
+
+}

@@ -12,471 +12,407 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-
+    <script src="https://silent-village-default-rtdb.asia-southeast1.firebasedatabase.app/"></script>
 </head>
 
 <body>
 
-    <div class="background"></div>
-
-    <header>
-        <h1>SILENT VILLAGE</h1>
-        <p>Discover. Deduce. Survive.</p>
-    </header>
+<header>
+    <h1>SILENT VILLAGE</h1>
+    <p>Mystery • Deception • Survival</p>
+</header>
 
 
-    <!-- LOGIN -->
+<!-- LOGIN -->
 
-    <section id="loginScreen" class="screen">
+<section id="loginScreen" class="screen">
 
-        <div class="card">
+    <div class="card">
 
-            <h2>Enter the Village</h2>
+        <h2>Enter the Village</h2>
 
-            <input
-                type="email"
-                id="loginEmail"
-                placeholder="Email"
-            >
+        <input
+            id="loginUsername"
+            type="text"
+            placeholder="Username"
+            maxlength="20"
+        >
 
-            <input
-                type="password"
-                id="loginPassword"
-                placeholder="Password"
-            >
+        <input
+            id="loginPassword"
+            type="password"
+            placeholder="Password"
+        >
 
-            <button onclick="login()">
-                SIGN IN
-            </button>
+        <button onclick="login()">
+            SIGN IN
+        </button>
 
-            <p id="loginMessage"></p>
+        <p id="loginMessage" class="message"></p>
 
-            <p>
-                Don't have an account?
-                <span class="link" onclick="showSignup()">
-                    Create Account
-                </span>
-            </p>
+        <p>
+            Don't have an account?
+            <span class="link" onclick="showSignup()">
+                Create Account
+            </span>
+        </p>
 
+    </div>
+
+</section>
+
+
+<!-- SIGN UP -->
+
+<section id="signupScreen" class="screen hidden">
+
+    <div class="card">
+
+        <h2>Create Account</h2>
+
+        <input
+            id="signupUsername"
+            type="text"
+            placeholder="Username"
+            maxlength="20"
+        >
+
+        <input
+            id="signupPassword"
+            type="password"
+            placeholder="Password"
+        >
+
+        <input
+            id="signupConfirm"
+            type="password"
+            placeholder="Confirm Password"
+        >
+
+        <button onclick="signup()">
+            CREATE ACCOUNT
+        </button>
+
+        <p id="signupMessage" class="message"></p>
+
+        <p>
+            Already have an account?
+            <span class="link" onclick="showLogin()">
+                Sign In
+            </span>
+        </p>
+
+    </div>
+
+</section>
+
+
+<!-- HOME -->
+
+<section id="homeScreen" class="screen hidden">
+
+    <div class="card">
+
+        <h2>Village Menu</h2>
+
+        <p>
+            Welcome,
+            <strong id="currentUsername"></strong>
+        </p>
+
+        <button onclick="createRoom()">
+            CREATE VILLAGE
+        </button>
+
+        <div class="or">
+            OR
         </div>
 
-    </section>
+        <input
+            id="roomCodeInput"
+            type="text"
+            placeholder="Enter Room Code"
+            maxlength="6"
+        >
+
+        <button onclick="joinRoom()">
+            JOIN VILLAGE
+        </button>
+
+        <button class="gray" onclick="logout()">
+            LOG OUT
+        </button>
+
+        <p id="roomMessage" class="message"></p>
+
+    </div>
+
+</section>
 
 
-    <!-- SIGN UP -->
+<!-- LOBBY -->
 
-    <section id="signupScreen" class="screen hidden">
+<section id="lobbyScreen" class="screen hidden">
 
-        <div class="card">
+    <div class="game-card">
 
-            <h2>Create Account</h2>
+        <h2>Village Lobby</h2>
 
-            <input
-                type="text"
-                id="signupUsername"
-                placeholder="Username"
-            >
-
-            <input
-                type="email"
-                id="signupEmail"
-                placeholder="Email"
-            >
-
-            <input
-                type="password"
-                id="signupPassword"
-                placeholder="Password"
-            >
-
-            <input
-                type="password"
-                id="signupConfirm"
-                placeholder="Confirm Password"
-            >
-
-            <button onclick="signup()">
-                CREATE ACCOUNT
-            </button>
-
-            <p id="signupMessage"></p>
-
-            <p>
-                Already have an account?
-                <span class="link" onclick="showLogin()">
-                    Sign In
-                </span>
-            </p>
-
+        <div class="room-code">
+            ROOM CODE
+            <strong id="roomCodeDisplay"></strong>
         </div>
 
-    </section>
+        <p class="center">
+            Give this code to your friends.
+        </p>
+
+        <p class="center small">
+            Minimum 3 players • Maximum 20 players
+        </p>
+
+        <h3>Players</h3>
+
+        <div id="playerList"></div>
+
+        <p id="playerCount" class="center"></p>
+
+        <button id="startButton" onclick="startGame()">
+            START GAME
+        </button>
+
+        <button class="gray" onclick="leaveRoom()">
+            LEAVE VILLAGE
+        </button>
+
+    </div>
+
+</section>
 
 
-    <!-- HOME -->
+<!-- GAME -->
 
-    <section id="homeScreen" class="screen hidden">
+<section id="gameScreen" class="screen hidden">
 
-        <div class="card">
+    <div class="game-card">
 
-            <h2>Village Lobby</h2>
+        <div class="top">
 
-            <p>
-                Welcome,
-                <strong id="currentUsername"></strong>
-            </p>
-
-            <p class="player-info">
-                3–20 players
-            </p>
-
-            <button onclick="createRoom()">
-                CREATE VILLAGE
-            </button>
-
-            <div class="divider">
-                OR
-            </div>
-
-            <input
-                type="text"
-                id="roomCodeInput"
-                placeholder="Enter Room Code"
-            >
-
-            <button onclick="joinRoom()">
-                JOIN VILLAGE
-            </button>
-
-            <button
-                class="logout"
-                onclick="logout()"
-            >
-                LOG OUT
-            </button>
-
-            <p id="roomMessage"></p>
-
-        </div>
-
-    </section>
-
-
-    <!-- LOBBY -->
-
-    <section id="lobbyScreen" class="screen hidden">
-
-        <div class="game-card">
-
-            <h2>Village Lobby</h2>
-
-            <div class="room-code">
-                ROOM CODE:
-                <strong id="roomCodeDisplay"></strong>
-            </div>
-
-            <p class="center">
-                Share this code with your friends.
-            </p>
-
-            <p class="player-info center">
-                Minimum 3 players • Maximum 20 players
-            </p>
-
-            <h3>Players</h3>
-
-            <div id="playerList"></div>
-
-            <p id="playerCount"></p>
-
-            <button
-                id="startButton"
-                onclick="startGame()"
-            >
-                START GAME
-            </button>
-
-            <button
-                class="logout"
-                onclick="leaveRoom()"
-            >
-                LEAVE VILLAGE
-            </button>
-
-        </div>
-
-    </section>
-
-
-    <!-- GAME -->
-
-    <section id="gameScreen" class="screen hidden">
-
-        <div class="game-card">
-
-            <div class="game-header">
-
-                <div>
-                    <h2>SILENT VILLAGE</h2>
-
-                    <p id="phaseText">
-                        Waiting for the game...
-                    </p>
-                </div>
-
-                <div class="timer">
-                    <span id="timer">60</span>s
-                </div>
-
-            </div>
-
-
-            <!-- ROLE -->
-
-            <div class="role-box">
-
-                <h3>Your Role</h3>
-
-                <div id="roleDisplay">
-                    UNKNOWN
-                </div>
-
-                <p id="roleDescription"></p>
-
-            </div>
-
-
-            <!-- SECRET WORD -->
-
-            <div
-                id="secretWordBox"
-                class="secret-box hidden"
-            >
-
-                <h3>WOLF SECRET WORD</h3>
-
-                <div id="secretWord">
-                    ----
-                </div>
-
-                <p>
-                    Do not reveal this word.
+            <div>
+                <h2>SILENT VILLAGE</h2>
+                <p id="phaseText">
+                    Explore the village.
                 </p>
-
             </div>
 
-
-            <!-- VILLAGE -->
-
-            <div class="village">
-
-                <div class="location">
-
-                    🏠
-
-                    <span>
-                        Village House
-                    </span>
-
-                    <button onclick="searchLocation('house')">
-                        SEARCH
-                    </button>
-
-                </div>
-
-
-                <div class="location">
-
-                    🌲
-
-                    <span>
-                        Forest
-                    </span>
-
-                    <button onclick="searchLocation('forest')">
-                        SEARCH
-                    </button>
-
-                </div>
-
-
-                <div class="location">
-
-                    ⛪
-
-                    <span>
-                        Church
-                    </span>
-
-                    <button onclick="searchLocation('church')">
-                        SEARCH
-                    </button>
-
-                </div>
-
-
-                <div class="location">
-
-                    🏪
-
-                    <span>
-                        Market
-                    </span>
-
-                    <button onclick="searchLocation('market')">
-                        SEARCH
-                    </button>
-
-                </div>
-
-
-                <div class="location">
-
-                    🏚️
-
-                    <span>
-                        Old Barn
-                    </span>
-
-                    <button onclick="searchLocation('barn')">
-                        SEARCH
-                    </button>
-
-                </div>
-
-
-                <div class="location">
-
-                    🌊
-
-                    <span>
-                        River
-                    </span>
-
-                    <button onclick="searchLocation('river')">
-                        SEARCH
-                    </button>
-
-                </div>
-
+            <div class="timer">
+                <span id="timer">60</span>
             </div>
 
-
-            <!-- CLUES -->
-
-            <div class="panel">
-
-                <h3>Your Clues</h3>
-
-                <div id="clueList">
-                    <p>No clues yet.</p>
-                </div>
-
-            </div>
+        </div>
 
 
-            <!-- ACTIONS -->
+        <!-- ROLE -->
 
-            <div class="panel">
+        <div class="role-box">
 
-                <h3>Actions</h3>
+            <p>YOUR ROLE</p>
 
-                <button
-                    onclick="callMeeting()"
-                >
-                    CALL MEETING
+            <h2 id="roleDisplay">
+                UNKNOWN
+            </h2>
+
+            <p id="roleDescription"></p>
+
+        </div>
+
+
+        <!-- SECRET WORD -->
+
+        <div id="secretWordBox" class="secret hidden">
+
+            <p>WOLF SECRET WORD</p>
+
+            <h2 id="secretWord">
+                ----
+            </h2>
+
+            <small>
+                Keep this secret.
+            </small>
+
+        </div>
+
+
+        <!-- LOCATIONS -->
+
+        <div class="panel">
+
+            <h3>Explore the Village</h3>
+
+            <div class="locations">
+
+                <button onclick="searchLocation('house')">
+                    🏠 HOUSE
                 </button>
 
-                <button
-                    id="killButton"
-                    class="danger hidden"
-                    onclick="wolfKill()"
-                >
-                    KILL PLAYER
+                <button onclick="searchLocation('forest')">
+                    🌲 FOREST
                 </button>
 
-                <button
-                    id="shootButton"
-                    class="danger hidden"
-                    onclick="sheriffShoot()"
-                >
-                    SHOOT WOLF
+                <button onclick="searchLocation('church')">
+                    ⛪ CHURCH
                 </button>
 
-            </div>
-
-
-            <!-- MEETING -->
-
-            <div
-                id="meetingPanel"
-                class="panel hidden"
-            >
-
-                <h3>Village Meeting</h3>
-
-                <p>
-                    Discuss and try to discover the Wolf.
-                </p>
-
-                <input
-                    type="text"
-                    id="wordGuess"
-                    placeholder="Guess the secret word"
-                >
-
-                <button onclick="guessWord()">
-                    GUESS WORD
+                <button onclick="searchLocation('market')">
+                    🏪 MARKET
                 </button>
 
-                <h4>Vote a Player</h4>
+                <button onclick="searchLocation('barn')">
+                    🏚️ BARN
+                </button>
 
-                <div id="voteList"></div>
-
-            </div>
-
-
-            <!-- EVENTS -->
-
-            <div class="panel">
-
-                <h3>Village Events</h3>
-
-                <div id="gameLog"></div>
+                <button onclick="searchLocation('river')">
+                    🌊 RIVER
+                </button>
 
             </div>
 
         </div>
 
-    </section>
+
+        <!-- CLUES -->
+
+        <div class="panel">
+
+            <h3>Your Clues</h3>
+
+            <div id="clueList">
+                <p class="small">
+                    No clues discovered yet.
+                </p>
+            </div>
+
+        </div>
 
 
-    <!-- GAME OVER -->
+        <!-- ACTIONS -->
 
-    <section
-        id="gameOverScreen"
-        class="screen hidden"
-    >
+        <div class="panel">
 
-        <div class="card">
+            <h3>Actions</h3>
 
-            <h1 id="winnerText">
-                GAME OVER
-            </h1>
+            <button onclick="callMeeting()">
+                📢 CALL MEETING
+            </button>
 
-            <p id="winnerDescription"></p>
+            <button
+                id="wolfAction"
+                class="danger hidden"
+                onclick="openWolfTarget()"
+            >
+                🐺 ELIMINATE PLAYER
+            </button>
 
-            <button onclick="returnHome()">
-                RETURN TO VILLAGE
+            <button
+                id="sheriffAction"
+                class="sheriff hidden"
+                onclick="openSheriffTarget()"
+            >
+                ⭐ INVESTIGATE WOLF
             </button>
 
         </div>
 
-    </section>
+
+        <!-- ACTION TARGET -->
+
+        <div
+            id="targetPanel"
+            class="panel hidden"
+        >
+
+            <h3 id="targetTitle">
+                Choose Player
+            </h3>
+
+            <div id="targetList"></div>
+
+        </div>
 
 
-    <script src="firebase-config.js"></script>
-    <script src="script.js"></script>
+        <!-- MEETING -->
+
+        <div
+            id="meetingPanel"
+            class="panel hidden"
+        >
+
+            <h3>🏛️ Village Meeting</h3>
+
+            <p>
+                Discuss who you think is the Wolf.
+            </p>
+
+            <input
+                id="wordGuess"
+                type="text"
+                placeholder="Guess the secret word"
+            >
+
+            <button onclick="guessWord()">
+                GUESS SECRET WORD
+            </button>
+
+            <h4>Vote a Player</h4>
+
+            <div id="voteList"></div>
+
+        </div>
+
+
+        <!-- EVENTS -->
+
+        <div class="panel">
+
+            <h3>Village Events</h3>
+
+            <div id="gameLog">
+                <p class="small">
+                    The village is quiet...
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- GAME OVER -->
+
+<section id="gameOverScreen" class="screen hidden">
+
+    <div class="card">
+
+        <h1 id="winnerText">
+            GAME OVER
+        </h1>
+
+        <p id="winnerDescription"></p>
+
+        <button onclick="returnHome()">
+            RETURN TO VILLAGE
+        </button>
+
+    </div>
+
+</section>
+
+
+<script src="firebase-config.js"></script>
+<script src="script.js"></script>
 
 </body>
 

@@ -1,34 +1,14 @@
 const firebaseConfig = {
-
-    apiKey: "YOUR_API_KEY",
-
-    authDomain:
-        "YOUR_PROJECT.firebaseapp.com",
-
-    databaseURL:
-        "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-
-    projectId:
-        "YOUR_PROJECT",
-
-    storageBucket:
-        "YOUR_PROJECT.firebasestorage.app",
-
-    messagingSenderId:
-        "YOUR_MESSAGING_SENDER_ID",
-
-    appId:
-        "YOUR_APP_ID"
-
+    apiKey: "AIzaSyABUc_pCdDLsEFcU9eP0VgaNJ3VdehH0aA",
+    authDomain: "silent-village.firebaseapp.com",
+    projectId: "silent-village",
+    storageBucket: "silent-village.firebasestorage.app",
+    messagingSenderId: "911256708360",
+    appId: "1:911256708360:web:fdf425820ab0b9547eb8bd",
+    measurementId: "G-GXFJB3R1ZC"
 };
-
 
 firebase.initializeApp(firebaseConfig);
 
-
-const auth =
-    firebase.auth();
-
-
-const database =
-    firebase.database();
+const auth = firebase.auth();
+const database = firebase.database();
